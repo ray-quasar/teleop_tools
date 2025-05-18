@@ -159,7 +159,9 @@ class JoyTeleopTopicCommand(JoyTeleopCommand):
             self.axis_mappings = config['axis_mappings']
             # Now check that the mappings have all of the required configuration.
             for mapping, values in self.axis_mappings.items():
-                if 'axis' not in values and 'button' not in values and 'value' not in values:
+                # Hacked in trigger functionality
+                if ('axis' not in values and 'trigger_axis' not in values and 'direction_axis' not in values    
+                    ) and 'button' not in values and 'value' not in values:
                     raise JoyTeleopException("Axis mapping for '{}' must have an axis, button, "
                                              'or value'.format(name))
 
@@ -221,6 +223,23 @@ class JoyTeleopTopicCommand(JoyTeleopCommand):
                                                 'but #{} was referenced in config.'.format(
                                                     len(joy_state.axes), values['axis']))
                         val = 0.0
+
+                # Hacked in Trigger throttle control
+                elif 'trigger_axis' in values:
+                    # Handle combined trigger + direction input
+                    trigger_val = joy_state.axes[values['trigger_axis']]
+                    direction_val = joy_state.axes[values['direction_axis']]
+                    
+                    # Normalize trigger from [1, -1] to [0, 1]
+                    trigger_magnitude = (-trigger_val + values.get('offset', 1.0)) / 2.0
+                    
+                    # Get direction from joystick, apply deadzone
+                    deadzone = values.get('direction_deadzone', 0.1)
+                    direction = 1.0 if direction_val > deadzone else -1.0 if direction_val < -deadzone else 0.0
+                    
+                    # Combine magnitude and direction
+                    val = trigger_magnitude * direction * values.get('scale', 1.0)
+
                 elif 'button' in values:
                     if len(joy_state.buttons) > values['button']:
                         val = joy_state.buttons[values['button']] * values.get('scale', 1.0) + \
