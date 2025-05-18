@@ -234,9 +234,10 @@ class JoyTeleopTopicCommand(JoyTeleopCommand):
                     trigger_magnitude = (-trigger_val + values.get('offset', 1.0)) / 2.0
                     
                     # Get direction from joystick, apply deadzone
-                    deadzone = values.get('direction_deadzone', 0.1)
-                    direction = 1.0 if direction_val > deadzone else -1.0 if direction_val < -deadzone else 0.0
-                    
+                    deadzone = values.get('direction_deadzone', 0.05)
+                    # direction = 1.0 if direction_val > deadzone else -1.0 if direction_val < -deadzone else 0.0
+                    direction = -1.0 if direction_val < -deadzone else 1.0
+
                     # Combine magnitude and direction
                     val = trigger_magnitude * direction * values.get('scale', 1.0)
 
